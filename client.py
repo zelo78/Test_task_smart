@@ -2,8 +2,6 @@ import argparse
 import http.client
 import json
 
-# from urllib import request, parse
-
 HOST, PORT = "localhost", 8000
 
 
@@ -43,6 +41,7 @@ def ask_server(method: str, data: dict) -> dict:
 
 
 def add_task(args):
+    """Добавление задачи в очередь"""
     # Подготовка данных
     data = {
         'task_type': args.task_type,
@@ -58,6 +57,7 @@ def add_task(args):
 
 
 def show_task(args):
+    """Просмотр данных о задаче. Выводит статус или результат задачи (в зависимости от поля args.command)"""
     # Подготовка данных
     identifier = args.id
     data = {'id': identifier}
@@ -80,10 +80,10 @@ def show_task(args):
 
 
 def command_line_processing():
+    """Создание и выполнение парсера параметров командной строки"""
     # create the top-level parser
     parser = argparse.ArgumentParser(
         description='Клиент тестового клиент-серверного приложения',
-        epilog='Использованы модули argparse, ',
         )
     subparsers = parser.add_subparsers(
         title='Команды',
