@@ -48,5 +48,8 @@
 
 ###Использованные библиотеки
 
+По условию задачи, использованы только стандартные библиотеки.
+
 - [argparse](https://docs.python.org/3/library/argparse.html) - Парсер параметров командной строки
-- [urllib.request](https://docs.python.org/3/library/urllib.request.html) - Библиотека для открытия URL
+- [http.client](https://docs.python.org/3/library/http.client.html) - Клиент HTTP протокола
+- [json](https://docs.python.org/3/library/json.html) - JSON энкодер/декодер
