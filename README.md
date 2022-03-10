@@ -51,5 +51,7 @@
 По условию задачи, использованы только стандартные библиотеки.
 
 - [argparse](https://docs.python.org/3/library/argparse.html) - Парсер параметров командной строки
+- [http.server](https://docs.python.org/3/library/http.server.html) - HTTP сервер
 - [http.client](https://docs.python.org/3/library/http.client.html) - Клиент HTTP протокола
 - [json](https://docs.python.org/3/library/json.html) - JSON энкодер/декодер
+- [threading](https://docs.python.org/3/library/threading.html) - Параллелизм на основе потоков

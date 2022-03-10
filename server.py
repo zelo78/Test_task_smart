@@ -5,26 +5,43 @@ from threading import Lock, Thread
 from time import sleep
 
 
-DB = []
-db_lock = Lock()
-
-
 class Task:
-    def __init__(self, type_code, string):
+    """Объект для хранения данных о задаче
+
+    Параметры:
+    type_code: код типа задачи
+    string: строка, которую следует обработать
+    Объект сохраняет также следующие данные:
+    state: статус выполнения задачи (pending, processing, done)
+    result: результат выполнения (строка). Пока задание не выполнено - None
+    """
+
+    def __init__(self, type_code: int, string: str):
         self.type_code = type_code
         self.string = string
         self.state = 'pending'
         self.result = None
 
     def __str__(self):
+        """Строковое представление задачи в целях отладки"""
+
         return f'Task: type {self.type_code}, string {self.string}, state {self.state}, result {self.result}'
 
 
 def do_work(type_code, string):
+    """Функция, которая реально выполняет задачи.
+
+    Данное выполнение вынесено в отдельную функцию во избежании коллизий"""
+
     if type_code == 1:
+        # Выполнить разворот строки. (`пример` -> `ремирп`).
+        # Задержка 2 сек.
         sleep(2)
         return string[::-1]
     elif type_code == 2:
+        # Выполнить попарно перестановку четных и нечетных символов в строке
+        # (`пример` -> `рпмире`, `кот` -> `окт`).
+        # Задержка 5 сек.
         sleep(5)
         arr = list(string)
         res = arr[1:]
@@ -33,6 +50,8 @@ def do_work(type_code, string):
             res[i] = arr[i-1]
         return ''.join(res)
     elif type_code == 3:
+        # Выполнить повтор символа в строке согласно его позиции (`пример` -> `прриииммммееееерррррр`).
+        # Задержка 7 сек.
         sleep(7)
         res = []
         for i, c in enumerate(string):
@@ -40,14 +59,14 @@ def do_work(type_code, string):
         return ''.join(res)
 
 
-def worker():
+def worker(db, db_lock):
     index = 0
 
     while True:
         with db_lock:
             # если есть очередная задача, то выбираем её
-            if index < len(DB):
-                task = DB[index]
+            if index < len(db):
+                task = db[index]
                 assert task.state == 'pending'
                 task.state = 'processing'
             else:
@@ -71,9 +90,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers['Content-Length'])
         data = json.loads(self.rfile.read(content_length))
         identifier = data['id']
-        with db_lock:
-            if 0 <= identifier < len(DB):
-                task = DB[identifier]
+        with self.server.db_lock:
+            if 0 <= identifier < len(self.server.db):
+                task = self.server.db[identifier]
             else:
                 task = None
 
@@ -95,9 +114,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers['Content-Length'])
         data = json.loads(self.rfile.read(content_length))
         task = Task(type_code=data['task_type'], string=data['string'])
-        with db_lock:
-            DB.append(task)
-            identifier = len(DB) - 1
+        with self.server.db_lock:
+            self.server.db.append(task)
+            identifier = len(self.server.db) - 1
 
         print(f'{task} was added as #{identifier}')
         data = {'id': identifier}
@@ -108,10 +127,35 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 
 def main():
+    """Серверная сторона программы.
+
+    Создаём Сервер, Очередь и Исполнителя.
+    Взаимодействуем с Сервером по HTTP протоколу.
+
+    Метод POST - создание новой задачи в очереди.
+    Метод GET - данные о текущей задаче в очереди.
+
+    Используем JSON для сериализации обектов.
+
+    Все входящие данные - в теле запроса.
+    Все выходящие данные - в ответе."""
+
+    # Очередь задач, реализована в виде списка
+    db = []
+    db_lock = Lock()  # Замок для исключения коллизий доступа
+
+    # Создаём Сервер
     server = HTTPServer(('localhost', 8000), RequestHandler)
+    # Сохраняем Очередь в аттрибутах Сервера
+    server.db = db
+    server.db_lock = db_lock
+
+    # Поток выполнения Сервера
     server_thread = Thread(target=server.serve_forever)
     server_thread.start()
-    worker_thread = Thread(target=worker)
+
+    # Поток Исполнителя
+    worker_thread = Thread(target=worker, kwargs={'db': db, 'db_lock': db_lock})
     worker_thread.start()
 
 
