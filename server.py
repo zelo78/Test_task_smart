@@ -60,6 +60,13 @@ def do_work(type_code, string):
 
 
 def worker(db, db_lock):
+    """Функция реализует Исполнителя, который обрабатывает очередь задач по одной за раз.
+
+    Параметры:
+    db - очередь задач. Предполагается, что реализована в виде списка
+    db_lock - Замок (Lock), позволяющий избежать коллизий совместного доступа"""
+
+    # указатель на текущую задачу в очереди
     index = 0
 
     while True:
@@ -67,8 +74,8 @@ def worker(db, db_lock):
             # если есть очередная задача, то выбираем её
             if index < len(db):
                 task = db[index]
-                assert task.state == 'pending'
-                task.state = 'processing'
+                assert task.state == 'pending'  # Задача точно должна иметь статус "Ожидает"
+                task.state = 'processing'  # меняем его на "Выполняется"
             else:
                 task = None  # пока нет необработанных задач
         if task is None:
@@ -76,13 +83,14 @@ def worker(db, db_lock):
             sleep(.1)
             continue
 
+        # начинаем выполнять задачу
         print(f'PROCESSING {task}')
         result = do_work(task.type_code, task.string)
         with db_lock:
-            task.state = 'done'
-            task.result = result
+            task.state = 'done'  # Меняем статус задачи на "Выполнено"
+            task.result = result  # Сохраняем результат
             print(f'DONE {task}')
-        index += 1
+        index += 1  # смещаем указатель на следующую задачу в очереди
 
 
 class RequestHandler(BaseHTTPRequestHandler):
